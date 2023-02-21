@@ -8,6 +8,8 @@ discordwebhook = ""
 #ลิงค์ที่มีประโยชน์
 #https://developers.line.biz/console
 #https://github.com/line/line-bot-sdk-python
+#เผื่ออยากใช้บอท discord แทน webhook
+#https://discord.com/developers
 #https://discordpy.readthedocs.io/en/stable/api.html
 
 from linebot.models import (
