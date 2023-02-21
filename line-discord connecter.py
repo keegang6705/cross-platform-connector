@@ -1,41 +1,59 @@
-linetoken=""
-linesecret=""
-discordwebhook=""
+linetoken = ""
+linesecret = ""
+discordwebhook = ""
 
+# อันนี้ส่งจาก line ไป discordwebhook เฉยๆ เพราะตั่งใจแค่จะรับข้อความจากไลน์ ไปส่งในช่องเดียว ละมันง่ายด้วยแค่ใส่ลิงค์ของ webhook
+# ส่วนตัวรับข้อความจาก discord แล้วส่งหาไลน์ต้องใช้บอทของ discord สร้างที่ devloper portal ก็ไปปรับใช้เอาเองละกัน
 
-import discord
-import os
-import json
-import pytz
-from datetime import datetime
-from flask import Flask, request, abort
-from discord import SyncWebhook, Embed
-from threading import Thread
-from linebot import (
-    LineBotApi, WebhookHandler
+#ลิงค์ที่มีประโยชน์
+#https://developers.line.biz/console
+#https://github.com/line/line-bot-sdk-python
+#https://discordpy.readthedocs.io/en/stable/api.html
+
+from linebot.models import (
+    MessageEvent, TextMessage, TextSendMessage,
 )
 from linebot.exceptions import (
     InvalidSignatureError
 )
-from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage,
+from linebot import (
+    LineBotApi, WebhookHandler
 )
+from threading import Thread
+from discord import SyncWebhook, Embed
+from flask import Flask, request, abort
+from datetime import datetime
+import pytz
+import json
+import os
+import discord
+
 webhook = SyncWebhook.from_url(url=discordwebhook)
 app = Flask(__name__)
+
+
 def date():
     tz = pytz.timezone('Asia/Bangkok')
     tm = datetime.now(tz)
     sak = int(tm.strftime("%G"))+543
     tmfs = tm.strftime(f"%A %d %B(%m) {sak}(%G) | %H:%M:%S.%f")[:-4]
     return tmfs
+
+
 @app.route('/')
 def main():
     return "a bot is running"
+
+
 def run():
     app.run(host="0.0.0.0", port=8000)
+
+
 def keep_alive():
     server = Thread(target=run)
     server.start()
+
+
 keep_alive()
 
 line_bot_api = LineBotApi(linetoken)
@@ -48,30 +66,34 @@ def callback():
     json_line = json.dumps(json_line)
     decoded = json.loads(json_line)
     print(decoded)
-    profile = line_bot_api.get_profile(decoded["events"][0]["source"]["userId"])
+    profile = line_bot_api.get_profile(
+        decoded["events"][0]["source"]["userId"])
     if decoded["events"][0]["source"]["type"] == "group":
-        summary = line_bot_api.get_group_summary(decoded["events"][0]["source"]["groupId"])
+        summary = line_bot_api.get_group_summary(
+            decoded["events"][0]["source"]["groupId"])
         if decoded["events"][0]["message"]["type"] == "text":
             try:
                 if len(decoded["events"][0]["message"]["text"]) <= 256:
                     embed = discord.Embed(title=decoded["events"][0]["message"]["text"],
-                                        description=f"message from `{summary.group_name}`", color=0x00ff00)
+                                          description=f"message from `{summary.group_name}`", color=0x00ff00)
                     embed.set_author(name=profile.display_name,
-                                    icon_url=profile.picture_url)
+                                     icon_url=profile.picture_url)
                     embed.set_footer(text=date())
                     webhook.send(embed=embed)
                 else:
                     embed = discord.Embed(title="too long(>256) cut to new message",
-                                        description=f"message from `{summary.group_name}`", color=0x00ff00)
+                                          description=f"message from `{summary.group_name}`", color=0x00ff00)
                     embed.set_author(name=profile.display_name,
-                                    icon_url=profile.picture_url)
+                                     icon_url=profile.picture_url)
                     embed.set_footer(text=date())
                     webhook.send(embed=embed)
                     if len(decoded["events"][0]["message"]["text"]) <= 2000:
-                        webhook.send(content=decoded["events"][0]["message"]["text"])
+                        webhook.send(
+                            content=decoded["events"][0]["message"]["text"])
                     else:
-                        chunks, chunk_size = len(decoded["events"][0]["message"]["text"]), 2000
-                        for x in [ (decoded["events"][0]["message"]["text"])[i:i+chunk_size] for i in range(0, chunks, chunk_size) ]:
+                        chunks, chunk_size = len(
+                            decoded["events"][0]["message"]["text"]), 2000
+                        for x in [(decoded["events"][0]["message"]["text"])[i:i+chunk_size] for i in range(0, chunks, chunk_size)]:
                             webhook.send(x)
             except Exception as e:
                 print(e)
@@ -101,23 +123,25 @@ def callback():
             try:
                 if len(decoded["events"][0]["message"]["text"]) <= 256:
                     embed = discord.Embed(title=decoded["events"][0]["message"]["text"],
-                                        description="", color=0x00ff00)
+                                          description="", color=0x00ff00)
                     embed.set_author(name=profile.display_name,
-                                    icon_url=profile.picture_url)
+                                     icon_url=profile.picture_url)
                     embed.set_footer(text=date())
                     webhook.send(embed=embed)
                 else:
                     embed = discord.Embed(title="too long(>256) cut to new message",
-                                        description="", color=0x00ff00)
+                                          description="", color=0x00ff00)
                     embed.set_author(name=profile.display_name,
-                                    icon_url=profile.picture_url)
+                                     icon_url=profile.picture_url)
                     embed.set_footer(text=date())
                     webhook.send(embed=embed)
                     if len(decoded["events"][0]["message"]["text"]) <= 2000:
-                        webhook.send(content=decoded["events"][0]["message"]["text"])
+                        webhook.send(
+                            content=decoded["events"][0]["message"]["text"])
                     else:
-                        chunks, chunk_size = len(decoded["events"][0]["message"]["text"]), 2000
-                        for x in [ (decoded["events"][0]["message"]["text"])[i:i+chunk_size] for i in range(0, chunks, chunk_size) ]:
+                        chunks, chunk_size = len(
+                            decoded["events"][0]["message"]["text"]), 2000
+                        for x in [(decoded["events"][0]["message"]["text"])[i:i+chunk_size] for i in range(0, chunks, chunk_size)]:
                             webhook.send(x)
             except Exception as e:
                 print(e)
@@ -144,12 +168,6 @@ def callback():
                 print("error but don't worry i response as 200")
     print("from callback")
     return "", 200
-
-
-@handler.add(MessageEvent, message=TextMessage)
-def handle_message(event):
-    print(event.message.text)
-    print("from handle")
 
 
 if __name__ == "__main__":
